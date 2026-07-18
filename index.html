@@ -1,39 +1,67 @@
-// Contoh logika saat tombol "Mulai Chat" diklik setelah mengisi prompt awal
-async function mulaiChatDanPicuAI() {
-    const systemPrompt = document.getElementById('promptInput').value; // Ambal prompt dari kolom awal
-    
-    // Pindah ke tampilan ruang chat
-    document.getElementById('halamanAwal').style.display = 'none';
-    document.getElementById('ruangChat').style.display = 'block';
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT Roleplay - Vercel Edition</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
 
-    // Tampilkan status "sedang mengetik..." sementara AI menyiapkan sapaan
-    tampilkanLoadingChat(true); 
+    <div class="app-container">
+        <!-- Panel Awal: Kustom Karakter -->
+        <div class="setup-panel" id="setupPanel">
+            <h3>Pengaturan AI Roleplay</h3>
+            <p style="font-size: 13px; color: #aaa; text-align: center; margin-bottom: 10px;">
+                API Key Anda sudah aman tersimpan di Serverless Env Vercel 🔒
+            </p>
+            <div class="input-group">
+                <label for="systemPrompt">Instruksi Karakter / Core Prompt:</label>
+                <textarea id="systemPrompt" rows="5" placeholder="Contoh: Kamu adalah Nadia, siswi SMA galak yang suka menagih uang kas tapi diam-diam naksir user. Tulis tindakan tanpa format, dialog dengan **tebal**, dan bisikan hati di dalam kurung ( )."></textarea>
+            </div>
+            <button id="saveSetupBtn">Mulai Chat Roleplay</button>
+        </div>
 
-    try {
-        // Tembak API dengan chatHistory kosong [] agar memicu kondisi AI menjawab duluan
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chatHistory: [], // Kosong karena baru mulai
-                systemPrompt: systemPrompt
-            })
-        });
+        <!-- Tampilan Chat Utama -->
+        <div class="chat-interface hidden" id="chatInterface">
+            <div class="chat-header">
+                <div class="header-left">
+                    <div class="avatar">🎭</div>
+                    <div class="char-info">
+                        <span class="char-name" id="charNameDisplay">Roleplay Partner</span>
+                        <span class="char-status">Online</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="wallpaperBtn" title="Ganti Wallpaper Sementara">🖼️</button>
+                    <input type="file" id="wallpaperInput" accept="image/*" style="display: none;">
+                    <button class="icon-btn" id="toggleSetupBtn" title="Pengaturan">⚙️</button>
+                </div>
+            </div>
 
-        const data = await response.json();
-        tampilkanLoadingChat(false);
+            <div class="chat-messages" id="chatMessages">
+                <div class="system-notice">
+                    Menghubungkan ke ChatGPT... AI sedang menyiapkan kalimat pembuka.
+                </div>
+            </div>
 
-        if (data.text) {
-            // Masukkan jawaban pertama dari AI ke dalam ruang obrolan web kamu
-            tampilkanPesanDiLayar({ role: 'model', text: data.text });
-            
-            // Simpan ke riwayat lokal web kamu agar ingatan berlanjut
-            riwayatChatLokal.push({ role: 'model', content: data.text });
-        } else {
-            alert("Gagal memuat sapaan awal: " + data.error);
-        }
-    } catch (error) {
-        tampilkanLoadingChat(false);
-        alert("Terjadi kesalahan jaringan: " + error.message);
-    }
-}
+            <div class="chat-input-bar">
+                <button class="action-btn-secondary" id="actionPlusBtn" title="Ganti Wallpaper">+</button>
+                <div class="input-wrapper">
+                    <textarea id="userInput" placeholder="Ketik pesan atau aksi awal di sini..." rows="1"></textarea>
+                </div>
+                <button id="sendBtn" class="send-btn">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
