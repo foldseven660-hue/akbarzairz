@@ -14,9 +14,13 @@ const wallpaperBtn = document.getElementById("wallpaperBtn");
 const actionPlusBtn = document.getElementById("actionPlusBtn");
 const wallpaperInput = document.getElementById("wallpaperInput");
 
-// 1. Simpan Kustom Karakter
+// 1. Simpan Kustom Karakter & Pemicu AI Bicara Duluan
 saveSetupBtn.addEventListener("click", () => {
     systemPrompt = systemPromptInput.value.trim();
+    if (!systemPrompt) {
+        alert("Harap isi dulu instruksi karakternya biar AI tidak kebingungan!");
+        return;
+    }
     
     if (systemPrompt) {
         const nameMatch = systemPrompt.match(/(?:adalah|sebagai)\s+([A-Z][a-zA-Z0-9_]+)/);
@@ -27,6 +31,10 @@ saveSetupBtn.addEventListener("click", () => {
 
     setupPanel.classList.add("hidden");
     chatInterface.classList.remove("hidden");
+    
+    // Otomatis bersihkan chat lama & panggil AI untuk sapaan pertama
+    chatMessages.innerHTML = "";
+    triggerFirstAISpeech();
 });
 
 toggleSetupBtn.addEventListener("click", () => {
@@ -103,7 +111,41 @@ function showLoading() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-// 6. Transmisi Data ke Serverless Function Vercel (/api/chat)
+// 6. Fungsi Khusus: Meminta AI Mengeluarkan Sapaan Pertama Kali
+async function triggerFirstAISpeech() {
+    showLoading();
+    chatHistory = []; // Reset riwayat
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                chatHistory: [], 
+                systemPrompt: systemPrompt
+            })
+        });
+
+        const loadingElement = document.getElementById("currentLoading");
+        if (loadingElement) loadingElement.remove();
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || "Gagal membangunkan AI.");
+        }
+
+        const data = await response.json();
+        appendMessage("ai", data.text);
+        chatHistory.push({ role: "assistant", content: data.text });
+
+    } catch (error) {
+        const loadingElement = document.getElementById("currentLoading");
+        if (loadingElement) loadingElement.remove();
+        alert("Gagal memuat salam awal: " + error.message);
+    }
+}
+
+// 7. Transmisi Data Obrolan Rutin (Format ChatGPT)
 async function handleSendMessage(isContinueAction = false) {
     let textToSend = "";
 
@@ -117,7 +159,7 @@ async function handleSendMessage(isContinueAction = false) {
         userInput.value = "";
     }
 
-    chatHistory.push({ role: "user", parts: [{ text: textToSend }] });
+    chatHistory.push({ role: "user", content: textToSend });
     showLoading();
 
     try {
@@ -142,7 +184,7 @@ async function handleSendMessage(isContinueAction = false) {
         const aiResponse = data.text;
 
         appendMessage("ai", aiResponse);
-        chatHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+        chatHistory.push({ role: "assistant", content: aiResponse });
 
     } catch (error) {
         const loadingElement = document.getElementById("currentLoading");
