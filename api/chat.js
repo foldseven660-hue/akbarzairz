@@ -4,38 +4,35 @@ export default async function handler(req, res) {
     }
 
     const { chatHistory, systemPrompt } = req.body;
-    const apiKey = process.env.OPENAI_API_KEY; 
+    const apiKey = process.env.OPENAI_API_KEY; // Otomatis membaca kunci OpenAI dari Vercel
 
     if (!apiKey) {
-        return res.status(500).json({ error: 'API Key (OPENAI_API_KEY) belum dikonfigurasi di Vercel.' });
+        return res.status(500).json({ error: 'API Key (OPENAI_API_KEY) belum dikonfigurasi di Environment Variables Vercel Anda.' });
     }
 
     try {
         const url = 'https://api.openai.com/v1/chat/completions';
         const openaiMessages = [];
 
-        // 1. Masukkan instruksi karakter (System Prompt) di paling atas
+        // 1. Masukkan Instruksi Karakter Utama (System Prompt)
         if (systemPrompt) {
             openaiMessages.push({ role: 'system', content: systemPrompt });
         }
 
-        // 2. Cek apakah ini chat pertama kali atau sudah ada riwayatnya
+        // 2. Cek apakah ini chat pertama kali atau lanjutan obrolan
         if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
-            // Jika sudah ada riwayat, ambil 10 chat terakhir saja biar hemat kuota
-            const limitedHistory = chatHistory.length > 10 ? chatHistory.slice(-10) : chatHistory;
-            
-            limitedHistory.forEach(msg => {
-                let content = msg.content || (msg.parts && msg.parts[0]?.text) || '';
-                let role = msg.role === 'model' ? 'assistant' : msg.role;
-                openaiMessages.push({ role, content });
-            });
+            // Ambil maksimal 12 baris obrolan terakhir saja biar irit token & anti-error limit
+            const limitedHistory = chatHistory.length > 12 ? chatHistory.slice(-12) : chatHistory;
+            openaiMessages.push(...limitedHistory);
         } else {
-            // TRIK UTAMA: Jika chat masih kosong, berikan perintah tersembunyi
-            // agar ChatGPT langsung memberikan teks pembuka/sapaan sesuai karakternya
-            openaiMessages.push({ role: 'user', content: 'Mulai roleplay! Sapa saya pertama kali sesuai dengan karakter dan situasi kamu.' });
+            // JIKA KOSONG: Perintah rahasia ini otomatis memicu ChatGPT membuat kalimat pembuka
+            openaiMessages.push({ 
+                role: 'user', 
+                content: 'Mulai roleplay! Langsung berikan sapaan, tindakan, atau dialog pembuka pertama kamu secara sepihak sesuai dengan karakter dan situasi yang diatur di system prompt.' 
+            });
         }
 
-        // 3. Panggil API ChatGPT (Menggunakan model gpt-4o-mini yang super cepat & murah)
+        // 3. Tembak API OpenAI menggunakan model gpt-4o-mini (Super cepat, pintar, dan sangat murah)
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -44,7 +41,8 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: 'gpt-4o-mini',
-                messages: openaiMessages
+                messages: openaiMessages,
+                temperature: 0.85
             })
         });
 
