@@ -4,14 +4,15 @@ export default async function handler(req, res) {
     }
 
     const { chatHistory, systemPrompt } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY; // Otomatis membaca dari Vercel Environment
+    const apiKey = process.env.GEMINI_API_KEY; 
 
     if (!apiKey) {
         return res.status(500).json({ error: 'API Key (GEMINI_API_KEY) belum dikonfigurasi di Environment Variables Vercel Anda.' });
     }
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // PERBAIKAN: Mengubah v1beta menjadi v1 agar sesuai dengan regulasi Google terbaru
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
         const payload = { contents: chatHistory };
         if (systemPrompt) {
