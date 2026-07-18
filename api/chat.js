@@ -11,13 +11,15 @@ export default async function handler(req, res) {
     }
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // PERBAIKAN FINAL 2026: Menggunakan v1beta + gemini-2.0-flash yang mendukung penuh fitur systemInstruction
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
         
         const payload = { contents: chatHistory };
         
-        // PERBAIKAN: Di versi v1, wajib menggunakan 'systemInstruction' (camelCase)
         if (systemPrompt) {
-            payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+            payload.systemInstruction = { 
+                parts: [{ text: systemPrompt }] 
+            };
         }
 
         const response = await fetch(url, {
@@ -32,8 +34,12 @@ export default async function handler(req, res) {
         }
 
         const data = await response.json();
-        const aiResponse = data.candidates[0].content.parts[0].text;
+        
+        if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
+            return res.status(500).json({ error: 'Format balasan API tidak sesuai atau kosong.' });
+        }
 
+        const aiResponse = data.candidates[0].content.parts[0].text;
         return res.status(200).json({ text: aiResponse });
     } catch (error) {
         return res.status(500).json({ error: error.message });
