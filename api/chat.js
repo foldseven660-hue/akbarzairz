@@ -11,12 +11,13 @@ export default async function handler(req, res) {
     }
 
     try {
-        // PERBAIKAN: Mengubah v1beta menjadi v1 agar sesuai dengan regulasi Google terbaru
         const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
         const payload = { contents: chatHistory };
+        
+        // PERBAIKAN: Di versi v1, wajib menggunakan 'systemInstruction' (camelCase)
         if (systemPrompt) {
-            payload.system_instruction = { parts: [{ text: systemPrompt }] };
+            payload.systemInstruction = { parts: [{ text: systemPrompt }] };
         }
 
         const response = await fetch(url, {
